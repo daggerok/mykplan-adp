@@ -1,5 +1,5 @@
 /// <reference lib="esnext" />
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { DARK_QUERY, isDarkTheme, nextThemeMode, readThemeMode, saveThemeMode, type ThemeMode } from '../../../shared/theme';
 
 const storage = (): Storage | undefined => {
@@ -23,7 +23,9 @@ export function useTheme() {
   }, []);
 
   const dark = isDarkTheme(mode, systemDark);
-  useEffect(() => {
+  // a layout effect: the class moves before any child's useEffect([dark]) reads the CSS variables (the charts kept
+  // the old theme's colors one switch behind, 2026-11-22; tests/theme-order.test.tsx)
+  useLayoutEffect(() => {
     const root = document.documentElement;
     root.classList.toggle('dark', dark);
     root.dataset.themeMode = mode;
