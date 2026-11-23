@@ -1,5 +1,5 @@
 /// <reference lib="esnext" />
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { themeIcon, themeTitle } from '../../../shared/theme';
 import { askRun, askStop, clearDemo, dataset, runIsLive, runState, settings } from '../../app/data';
 import { derive } from '../../app/derive';
@@ -76,6 +76,29 @@ export function App() {
   const theme = useTheme();
   const language = useStore(lang);
   useEffect(() => { document.documentElement.lang = language; }, [language]);
+  // the header on one line when everything fits; otherwise every row is spread over the full width and centered
+  // (owner 2026-11-22: a left-hugging second row of icons looked broken). Measured from the items' own widths, so the
+  // spread layout itself never decides whether it is needed
+  const headerRef = useRef<HTMLElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const toolsRef = useRef<HTMLDivElement>(null);
+  const [wrapped, setWrapped] = useState(false);
+  useLayoutEffect(() => {
+    const measure = () => {
+      const h = headerRef.current;
+      if (!h) return;
+      const natural = (el: HTMLElement | null, gap: number) => (el ? Array.from(el.children).reduce((w, c) => w + (c as HTMLElement).offsetWidth + gap, -gap) : 0);
+      const pad = 32 + 3 * 12; // px-4 on both sides, gap-3 between title, tabs and tools
+      const xl = window.matchMedia('(min-width: 1280px)').matches; // below xl the tabs always take their own row
+      const fits = xl && (titleRef.current?.offsetWidth ?? 0) + natural(navRef.current, 4) + natural(toolsRef.current, 4) + pad <= h.clientWidth;
+      setWrapped(!fits);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (headerRef.current) ro.observe(headerRef.current);
+    return () => ro.disconnect();
+  });
   const [screen, setScreenState] = useState<Screen>(() => screenOfHash(location.hash));
   const setScreen = (next: Screen) => {
     setScreenState(next);
@@ -129,11 +152,11 @@ export function App() {
     <div className="flex h-dvh flex-col font-sans">
       <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pt-4 lg:gap-6 lg:px-6 lg:pt-6">
       <div className="flex shrink-0 flex-col">
-      <header className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 dark:border-slate-700 dark:bg-slate-800">
-        <h1 className="text-base font-semibold">mykplan-adp</h1>
+      <header ref={headerRef} data-wrapped={wrapped ? 'yes' : 'no'} className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 dark:border-slate-700 dark:bg-slate-800">
+        <h1 ref={titleRef} className="text-base font-semibold">mykplan-adp</h1>
         {/* the screens appear only when there is something to show on them (data with the daily prices) */}
         {/* below 1280 px the tabs take their own row under the buttons, so none is cut off */}
-        {d ? <nav className="order-last flex basis-full gap-1 overflow-x-auto [scrollbar-width:none] xl:order-none xl:basis-auto xl:flex-1 [&::-webkit-scrollbar]:hidden" aria-label="Screens">
+        {d ? <nav ref={navRef} className={`order-last flex basis-full gap-1 overflow-x-auto [scrollbar-width:none] xl:order-none xl:basis-auto xl:flex-1 [&::-webkit-scrollbar]:hidden ${wrapped ? 'justify-evenly' : ''}`} aria-label="Screens">
           {SCREENS.map((s) => (
             <button
               key={s}
@@ -147,18 +170,18 @@ export function App() {
             </button>
           ))}
         </nav> : null}
-        <div className="flex-1" />
-        <div className="flex items-center gap-1">
+        {!wrapped && <div className="flex-1" />}
+        <div ref={toolsRef} className={`flex flex-wrap items-center gap-1 ${wrapped ? 'grow justify-evenly xl:basis-full' : ''}`}>
           {isOlder(userscript, APP_VERSION) && (
             <a href="./mykplan-adp-sync.user.js" data-update-hint title={t('The installed script is {installed}; this page serves {served}', { installed: userscript ?? '', served: APP_VERSION })}
-              className="mr-1 inline-flex items-center gap-2 rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20">
+              className="mr-1 inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20">
               {t('Script update {version} →', { version: APP_VERSION })}
             </a>
           )}
           {!ds && !showSettings && (
             // nothing set up yet and the settings are closed: point at them
             <button type="button" onClick={toggleSettings} data-start-hint
-              className="mr-1 inline-flex items-center gap-2 rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20">
+              className="mr-1 inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-100 dark:border-blue-500/40 dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20">
               <span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-blue-400 opacity-75" /><span className="relative inline-flex size-2 rounded-full bg-blue-500" /></span>
               {t('Start here: open settings →')}
             </button>
