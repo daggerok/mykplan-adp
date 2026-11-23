@@ -45,7 +45,9 @@ export function BuilderScreen({ d, ds, benchmarks, dark }: { d: Derived; ds: Dat
   }, [layout, d, ds, benchData]);
 
   return (
-    <div className="flex flex-col gap-2">
+    // the screen fills the card and the chart takes what the buttons leave: with a fixed 68vh the time axis fell below
+    // the card on smaller windows, and the wheel over the chart zooms it instead of scrolling the page (2026-11-22)
+    <div className="flex h-full min-h-0 flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
         {layouts.map((l, k) => <button key={l.name + k} type="button" className={btn(k === i)} onClick={() => setI(k)}>{l.name}</button>)}
         <button type="button" className={btn(false)} onClick={() => { const name = t('Layout {n}', { n: layouts.length + 1 }); const next = [...layouts, { ...layout, name }]; setLayouts(next); saveLayouts(next); setI(next.length - 1); }}>{t('+ copy')}</button>
@@ -65,7 +67,7 @@ export function BuilderScreen({ d, ds, benchmarks, dark }: { d: Derived; ds: Dat
       <div className="flex flex-wrap gap-1 text-xs">
         {funds.map((f) => <button key={f} type="button" className={btn(layout.main.includes(`fund:${f}`))} onClick={() => toggle(`fund:${f}`)} title={t('fund price')}>{f.split(' - ')[0]}</button>)}
       </div>
-      <div ref={el} className="h-[68vh] min-h-[360px] w-full" data-builder />
+      <div ref={el} className="min-h-[320px] w-full flex-1" data-builder />
     </div>
   );
 }
