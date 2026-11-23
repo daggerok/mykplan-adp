@@ -26,6 +26,7 @@ export interface BuiltSeries {
   name: string;
   color: string;
   scale?: string; // separate price scale inside a pane (the % step line next to the bars)
+  unit: '%' | '$' | 'index'; // what the numbers mean: shown on the scale and in the legend
   data: Array<{ date: string; value: number }>;
 }
 
@@ -48,13 +49,15 @@ export function buildSeries(layout: Layout, d: Derived, ds: Dataset, benches: Re
   const label = (id: string) => (id === 'nav' ? 'Portfolio' : id === 'value' ? 'Value $' : id.startsWith('fund:') ? id.slice(5).split(' - ')[0]! : id.slice(6));
   layout.main.forEach((id, i) => {
     const data = cut(mainData(id), layout.from);
-    out.push({ pane: 0, kind: 'line', name: label(id), color: COLORS[i % COLORS.length]!, data: layout.percentFrom ? rebase(data) : data });
+    // percent from the start when asked; otherwise dollars for the value and fund prices, the index (100 = start) for the rest
+    const unit = layout.percentFrom ? '%' : id === 'value' || id.startsWith('fund:') ? '$' : 'index';
+    out.push({ pane: 0, kind: 'line', name: label(id), color: COLORS[i % COLORS.length]!, unit, data: layout.percentFrom ? rebase(data) : data });
   });
   let pane = 1;
   if (layout.contributions) {
     const pays = d.paychecks.filter((p) => !layout.from || p.payCheckDate >= layout.from);
-    out.push({ pane, kind: 'histogram', name: 'EE + ER', color: '#2563eb', data: pays.map((p) => ({ date: p.payCheckDate, value: p.total / 100 })) });
-    out.push({ pane, kind: 'histogram', name: 'ER', color: '#16a34a', data: pays.map((p) => ({ date: p.payCheckDate, value: (p.ER_MATCH + p.ER_NEC) / 100 })) });
+    out.push({ pane, kind: 'histogram', name: 'EE + ER', color: '#2563eb', unit: '$', data: pays.map((p) => ({ date: p.payCheckDate, value: p.total / 100 })) });
+    out.push({ pane, kind: 'histogram', name: 'ER', color: '#16a34a', unit: '$', data: pays.map((p) => ({ date: p.payCheckDate, value: (p.ER_MATCH + p.ER_NEC) / 100 })) });
     // the step line covers the shown days only: the level on the start day comes from the last change before it,
     // and the last level is held up to the last day of the data
     const lastDay = d.nav[d.nav.length - 1]?.date ?? '9999-12-31';
@@ -64,14 +67,14 @@ export function buildSeries(layout: Layout, d: Derived, ds: Dataset, benches: Re
     if (before && (!steps.length || steps[0]!.date > layout.from!)) steps.unshift({ date: layout.from!, value: before.value });
     const lastStep = steps[steps.length - 1];
     if (lastStep && d.nav.length && lastDay > lastStep.date) steps.push({ date: lastDay, value: lastStep.value });
-    out.push({ pane, kind: 'step', name: 'Contribution %', color: '#f59e0b', scale: 'pct', data: steps });
+    out.push({ pane, kind: 'step', name: 'Contribution %', color: '#f59e0b', scale: 'pct', unit: '%', data: steps });
     pane++;
   }
   if (layout.drawdown) {
     layout.main.forEach((id, i) => {
       if (id === 'value') return; // dollars include contributions: not a drawdown
       const data = cut(mainData(id), layout.from);
-      out.push({ pane, kind: 'line', name: `${label(id)} drawdown`, color: COLORS[i % COLORS.length]!, data: drawdownSeries(data).map((p) => ({ date: p.date, value: p.drawdown * 100 })) });
+      out.push({ pane, kind: 'line', name: `${label(id)} drawdown`, color: COLORS[i % COLORS.length]!, unit: '%', data: drawdownSeries(data).map((p) => ({ date: p.date, value: p.drawdown * 100 })) });
     });
   }
   return out;

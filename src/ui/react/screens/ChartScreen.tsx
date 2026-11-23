@@ -113,9 +113,13 @@ export function ChartScreen({ d, ds, benchmarks, dark }: { d: Derived; ds: Datas
       return { ...m, date: candleDay };
     });
     c.setMarkers(keyed.filter((m) => m.kind !== 'contribution' || tf === '1D'));
+    // the scale says what its numbers are, the legend names the main line
+    if (series === 'value') c.setUnit('$', t('Account value, $'));
+    else if (series === 'vs') c.setUnit('%', t('Your return minus {cmp}, percentage points', { cmp }));
+    else c.setUnit('index', t('Your return, 100 = first day'));
     c.setLog(series !== 'vs' && log);
     c.fit();
-  }, [shown, tf, log, d.markers, flowsByDay, series, vsRows]);
+  }, [shown, tf, log, d.markers, flowsByDay, series, vsRows, cmp, language]);
 
   useEffect(() => {
     const c = chart.current;

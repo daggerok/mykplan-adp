@@ -9,7 +9,7 @@ import { afterAll, beforeAll, expect, mock, test } from 'bun:test';
 // happy-dom has no canvas: the chart library is replaced by a stub, the shell is what this test checks
 const series = () => ({ setData() {}, applyOptions() {} });
 mock.module('lightweight-charts', () => ({
-  createChart: () => ({ addSeries: series, removeSeries() {}, priceScale: () => ({ applyOptions() {} }), applyOptions() {}, timeScale: () => ({ fitContent() {} }), remove() {} }),
+  createChart: () => ({ addSeries: series, removeSeries() {}, priceScale: () => ({ applyOptions() {} }), applyOptions() {}, timeScale: () => ({ fitContent() {}, applyOptions() {} }), panes: () => [], remove() {} }),
   createSeriesMarkers: () => ({ setMarkers() {} }),
   LineSeries: {}, CandlestickSeries: {}, HistogramSeries: {},
 }));

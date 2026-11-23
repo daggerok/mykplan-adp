@@ -153,4 +153,9 @@ export const RU_SCREENS: Record<string, string> = {
   '{year}: single {single}, joint {joint}': '{year}: для одного {single}, для пары {joint}',
   'NJ {nj} (every year): single {single}, joint {joint}': 'NJ {nj} (каждый год): для одного {single}, для пары {joint}',
   'NJ at 62+: retirement income is excluded up to $100,000 joint or $75,000 single when total income is under $100,000': 'NJ с 62 лет: пенсионный доход не облагается до $100,000 для пары или $75,000 для одного, если весь доход меньше $100,000',
+  // chart units (2026-11-22)
+  'Account value, $': 'Стоимость счёта, $',
+  'Your return minus {cmp}, percentage points': 'Твоя доходность минус {cmp}, процентные пункты',
+  'Your return, 100 = first day': 'Твоя доходность, 100 = первый день',
+  '100 = start': '100 = начало',
 };
