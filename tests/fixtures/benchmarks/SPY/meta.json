@@ -1,0 +1,54 @@
+{
+ "ticker": "SPY",
+ "name": "State Street SPDR S&P 500 ETF Trust",
+ "nav": {
+  "asOfDate": "Sep 25 2026"
+ },
+ "history": {
+  "totalRows": 12,
+  "pageSize": 5,
+  "pageCount": 3,
+  "pages": [
+   "./history/001.json",
+   "./history/002.json",
+   "./history/003.json"
+  ]
+ },
+ "distributions": {
+  "frequency": "Quarterly",
+  "headers": [
+   "Ex-Date",
+   "Record Date",
+   "Payable Date",
+   "Dividend",
+   "ST Cap Gains",
+   "LT Cap Gains"
+  ],
+  "rows": [
+   [
+    "09/18/2026",
+    "09/18/2026",
+    "10/30/2026",
+    "1.888834",
+    "-",
+    "-"
+   ],
+   [
+    "06/18/2026",
+    "06/18/2026",
+    "07/31/2026",
+    "1.903516",
+    "-",
+    "-"
+   ],
+   [
+    "03/20/2026",
+    "03/20/2026",
+    "04/30/2026",
+    "1.796999",
+    "-",
+    "-"
+   ]
+  ]
+ }
+}

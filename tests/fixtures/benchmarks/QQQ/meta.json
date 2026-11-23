@@ -1,0 +1,40 @@
+{
+ "ticker": "QQQ",
+ "name": "Invesco QQQ Trust, Series 1",
+ "nav": {
+  "asOfDate": "Sep 30 2026"
+ },
+ "history": {
+  "totalRows": 13,
+  "pageSize": 5,
+  "pageCount": 3,
+  "pages": [
+   "history/001.json",
+   "history/002.json",
+   "history/003.json"
+  ],
+  "asOf": "Sep 30 2026",
+  "source": "Yahoo Finance public chart API (adjusted close)"
+ },
+ "distributions": {
+  "frequency": "Quarterly",
+  "headers": [
+   "Ex-Date",
+   "Amount"
+  ],
+  "rows": [
+   [
+    "03/23/2026",
+    "0.733"
+   ],
+   [
+    "06/22/2026",
+    "0.813"
+   ],
+   [
+    "09/21/2026",
+    "0.751"
+   ]
+  ]
+ }
+}

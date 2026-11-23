@@ -1,0 +1,45 @@
+{
+ "ticker": "SMH",
+ "name": "VanEck Semiconductor ETF",
+ "nav": {
+  "asOfDate": "Dec 31 2025"
+ },
+ "history": {
+  "totalRows": 17,
+  "pageSize": 6,
+  "pageCount": 3,
+  "pages": [
+   "history/001.json",
+   "history/002.json",
+   "history/003.json"
+  ],
+  "asOfDate": "Dec 31 2025",
+  "source": "VanEck NAV & premium/discount history download (https://www.vaneck.com/us/en/investments/semiconductor-etf-smh/downloads/fundhistoprices/)"
+ },
+ "asOfDate": "Dec 31 2025",
+ "distributions": {
+  "frequency": "Annually",
+  "headers": [
+   "Ex-Date",
+   "Payable Date",
+   "Dividend"
+  ],
+  "rows": [
+   {
+    "Ex-Date": "Dec 22 2025",
+    "Payable Date": "Dec 26 2025",
+    "Dividend": "$1.1047"
+   },
+   {
+    "Ex-Date": "Dec 23 2024",
+    "Payable Date": "Dec 24 2024",
+    "Dividend": "$1.0713"
+   },
+   {
+    "Ex-Date": "Dec 18 2023",
+    "Payable Date": "Dec 22 2023",
+    "Dividend": "$1.0427"
+   }
+  ]
+ }
+}

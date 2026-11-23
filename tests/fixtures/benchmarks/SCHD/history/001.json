@@ -1,0 +1,74 @@
+{
+ "ticker": "SCHD",
+ "page": 1,
+ "pageSize": 20,
+ "totalRows": 10,
+ "headers": [
+  "Date",
+  "Close",
+  "Adj Close",
+  "Volume"
+ ],
+ "rows": [
+  {
+   "Date": "Sep 16 2026",
+   "Close": "33.84000015258789",
+   "Adj Close": "33.57",
+   "Volume": "23977000"
+  },
+  {
+   "Date": "Sep 17 2026",
+   "Close": "33.88999938964844",
+   "Adj Close": "33.62",
+   "Volume": "21048900"
+  },
+  {
+   "Date": "Sep 18 2026",
+   "Close": "33.68000030517578",
+   "Adj Close": "33.41",
+   "Volume": "22392900"
+  },
+  {
+   "Date": "Sep 21 2026",
+   "Close": "33.720001220703125",
+   "Adj Close": "33.45",
+   "Volume": "25218300"
+  },
+  {
+   "Date": "Sep 22 2026",
+   "Close": "33.7400016784668",
+   "Adj Close": "33.47",
+   "Volume": "24317000"
+  },
+  {
+   "Date": "Sep 23 2026",
+   "Close": "33.279998779296875",
+   "Adj Close": "33.28",
+   "Volume": "23170100"
+  },
+  {
+   "Date": "Sep 24 2026",
+   "Close": "33.099998474121094",
+   "Adj Close": "33.1",
+   "Volume": "21475800"
+  },
+  {
+   "Date": "Sep 25 2026",
+   "Close": "33.209999084472656",
+   "Adj Close": "33.21",
+   "Volume": "23798900"
+  },
+  {
+   "Date": "Sep 28 2026",
+   "Close": "33.0099983215332",
+   "Adj Close": "33.01",
+   "Volume": "27620300"
+  },
+  {
+   "Date": "Sep 29 2026",
+   "Close": "32.849998474121094",
+   "Adj Close": "32.85",
+   "Volume": "25686000"
+  }
+ ]
+}

@@ -1,0 +1,38 @@
+{
+ "ticker": "SCHD",
+ "name": "Schwab U.S. Dividend Equity ETF",
+ "nav": {
+  "asOfDate": "Sep 29 2026"
+ },
+ "history": {
+  "totalRows": 10,
+  "pageSize": 20,
+  "pageCount": 1,
+  "pages": [
+   "history/001.json"
+  ],
+  "asOf": "Sep 29 2026",
+  "source": "Yahoo Finance public chart API (adjusted close)"
+ },
+ "distributions": {
+  "frequency": "Quarterly",
+  "headers": [
+   "Ex-Date",
+   "Amount"
+  ],
+  "rows": [
+   [
+    "03/25/2026",
+    "0.2569"
+   ],
+   [
+    "06/24/2026",
+    "0.2525"
+   ],
+   [
+    "09/23/2026",
+    "0.2665"
+   ]
+  ]
+ }
+}

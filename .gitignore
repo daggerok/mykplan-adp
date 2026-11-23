@@ -1,0 +1,11 @@
+node_modules/
+dist/
+public/
+data/
+google.json
+config/*.local.json
+*.pdf
+tests/fixtures-private/
+.DS_Store
+.idea/
+.check/

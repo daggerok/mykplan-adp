@@ -1,0 +1,16 @@
+{
+  "theme": "system",
+  "chart": { "timeframe": "1W", "series": "performance", "range": "All", "scale": "linear" },
+  "forecast": {
+    "retireAge": 67,
+    "contribMode": "asNow",
+    "employerRule": "history12m",
+    "returnSource": ["myHistory:All", "benchmark:SPY:10Y"],
+    "inflationPct": 3,
+    "real": false,
+    "goals": [100000, 250000, 500000, 1000000],
+    "monteCarloRuns": 5000
+  },
+  "crawl": { "pauseMs": [1000, 2000], "backoffSec": [5, 15, 60] },
+  "reconcileTolerancePp": 0.05
+}

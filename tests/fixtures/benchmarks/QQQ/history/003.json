@@ -1,0 +1,32 @@
+{
+ "ticker": "QQQ",
+ "page": 3,
+ "pageSize": 5,
+ "totalRows": 13,
+ "headers": [
+  "Date",
+  "Close",
+  "Adj Close",
+  "Volume"
+ ],
+ "rows": [
+  {
+   "Date": "Sep 28 2026",
+   "Close": "736.530029",
+   "Adj Close": "736.53",
+   "Volume": "41775000"
+  },
+  {
+   "Date": "Sep 29 2026",
+   "Close": "737.929993",
+   "Adj Close": "737.93",
+   "Volume": "27052300"
+  },
+  {
+   "Date": "Sep 30 2026",
+   "Close": "739.77002",
+   "Adj Close": "739.77",
+   "Volume": "29820400"
+  }
+ ]
+}

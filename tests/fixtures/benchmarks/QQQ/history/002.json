@@ -1,0 +1,44 @@
+{
+ "ticker": "QQQ",
+ "page": 2,
+ "pageSize": 5,
+ "totalRows": 13,
+ "headers": [
+  "Date",
+  "Close",
+  "Adj Close",
+  "Volume"
+ ],
+ "rows": [
+  {
+   "Date": "Sep 21 2026",
+   "Close": "741.469971",
+   "Adj Close": "741.47",
+   "Volume": "46730600"
+  },
+  {
+   "Date": "Sep 22 2026",
+   "Close": "747.460022",
+   "Adj Close": "747.46",
+   "Volume": "40128800"
+  },
+  {
+   "Date": "Sep 23 2026",
+   "Close": "741.210022",
+   "Adj Close": "741.21",
+   "Volume": "33191800"
+  },
+  {
+   "Date": "Sep 24 2026",
+   "Close": "741.099976",
+   "Adj Close": "741.1",
+   "Volume": "29000900"
+  },
+  {
+   "Date": "Sep 25 2026",
+   "Close": "744.5",
+   "Adj Close": "744.5",
+   "Volume": "30283800"
+  }
+ ]
+}

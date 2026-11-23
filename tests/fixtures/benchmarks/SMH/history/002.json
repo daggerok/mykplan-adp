@@ -1,0 +1,71 @@
+{
+ "ticker": "SMH",
+ "page": 2,
+ "pageSize": 6,
+ "totalRows": 17,
+ "headers": [
+  "Date",
+  "NAV",
+  "Close",
+  "Volume",
+  "Premium/Discount",
+  "Total Net Assets",
+  "Index Level"
+ ],
+ "rows": [
+  {
+   "Date": "Dec 25 2025",
+   "NAV": "364.3090",
+   "Close": "364.17",
+   "Volume": "1,640,529",
+   "Premium/Discount": "-0.14",
+   "Total Net Assets": "37,466,222,334.65",
+   "Index Level": "14,899.33"
+  },
+  {
+   "Date": "Dec 24 2025",
+   "NAV": "364.3090",
+   "Close": "364.17",
+   "Volume": "1,640,529",
+   "Premium/Discount": "-0.14",
+   "Total Net Assets": "37,466,222,334.65",
+   "Index Level": "14,899.33"
+  },
+  {
+   "Date": "Dec 23 2025",
+   "NAV": "363.2347",
+   "Close": "363.16",
+   "Volume": "3,453,328",
+   "Premium/Discount": "-0.07",
+   "Total Net Assets": "37,174,119,100.32",
+   "Index Level": "14,855.23"
+  },
+  {
+   "Date": "Dec 22 2025",
+   "NAV": "359.7875",
+   "Close": "359.70",
+   "Volume": "4,549,748",
+   "Premium/Discount": "-0.09",
+   "Total Net Assets": "36,803,336,415.74",
+   "Index Level": "14,714.03"
+  },
+  {
+   "Date": "Dec 21 2025",
+   "NAV": "356.7132",
+   "Close": "356.23",
+   "Volume": "",
+   "Premium/Discount": "-0.48",
+   "Total Net Assets": "39,128,539,469.95",
+   "Index Level": "14,542.99"
+  },
+  {
+   "Date": "Dec 20 2025",
+   "NAV": "356.7132",
+   "Close": "356.23",
+   "Volume": "",
+   "Premium/Discount": "-0.48",
+   "Total Net Assets": "39,128,539,469.95",
+   "Index Level": "14,542.99"
+  }
+ ]
+}

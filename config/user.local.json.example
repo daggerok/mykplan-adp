@@ -1,0 +1,4 @@
+{
+  "birthDate": "YYYY-MM-DD (optional: without it the birth month comes from the age on AccountHighlights)",
+  "retireAge": 67
+}

@@ -1,0 +1,60 @@
+{
+ "ticker": "VTV",
+ "page": 3,
+ "pageSize": 4,
+ "totalRows": 11,
+ "headers": [
+  "Date",
+  "Open",
+  "High",
+  "Low",
+  "Close",
+  "Adj Close",
+  "Volume",
+  "NAV",
+  "Market Price",
+  "Premium/Discount (%)",
+  "Source"
+ ],
+ "rows": [
+  {
+   "Date": "2026-10-02",
+   "Open": 217.47999572753906,
+   "High": 218,
+   "Low": 216.58999633789062,
+   "Close": 217.22999572753906,
+   "Adj Close": 217.23,
+   "Volume": 3130300,
+   "NAV": 217.21,
+   "Market Price": 217.23,
+   "Premium/Discount (%)": 0.01,
+   "Source": "vanguard-official"
+  },
+  {
+   "Date": "2026-10-05",
+   "Open": 217,
+   "High": 218.25,
+   "Low": 215.6999969482422,
+   "Close": 217.92999267578125,
+   "Adj Close": 217.93,
+   "Volume": 3350900,
+   "NAV": 217.92,
+   "Market Price": 217.93,
+   "Premium/Discount (%)": 0,
+   "Source": "vanguard-official"
+  },
+  {
+   "Date": "2026-10-06",
+   "Open": 218.36000061035156,
+   "High": 219.52000427246094,
+   "Low": 218.27000427246094,
+   "Close": 219.00999450683594,
+   "Adj Close": 219.01,
+   "Volume": 2651700,
+   "NAV": 218.98,
+   "Market Price": 219.01,
+   "Premium/Discount (%)": 0.01,
+   "Source": "vanguard-official"
+  }
+ ]
+}

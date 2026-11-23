@@ -1,0 +1,61 @@
+{
+ "ticker": "VTV",
+ "name": "Vanguard Value ETF",
+ "nav": {
+  "asOfDate": "Oct 06 2026"
+ },
+ "history": {
+  "totalRows": 11,
+  "pageSize": 4,
+  "pageCount": 3,
+  "pages": [
+   "history/001.json",
+   "history/002.json",
+   "history/003.json"
+  ],
+  "asOfDate": "2026-10-06",
+  "source": "Vanguard IRR AdditionalFundData historicalPrice + premiumDiscountDetails (official NAV/market price/premium-discount, primary) + Yahoo Finance public chart API (OHLC/adjusted close/volume, and any date range the official windows don't cover; per-row provenance in the `Source` column)",
+  "asOf": "Oct 06 2026"
+ },
+ "distributions": {
+  "frequency": "Quarterly",
+  "headers": [
+   "Frequency",
+   "Ex-Date",
+   "Record Date",
+   "Payable Date",
+   "Dividend",
+   "ST Cap Gains",
+   "LT Cap Gains"
+  ],
+  "rows": [
+   [
+    "Quarterly",
+    "2026-09-28",
+    "\u2014",
+    "\u2014",
+    "1.017",
+    "\u2014",
+    "\u2014"
+   ],
+   [
+    "Quarterly",
+    "2026-06-26",
+    "\u2014",
+    "\u2014",
+    "1.082",
+    "\u2014",
+    "\u2014"
+   ],
+   [
+    "Quarterly",
+    "2026-03-27",
+    "\u2014",
+    "\u2014",
+    "1.079",
+    "\u2014",
+    "\u2014"
+   ]
+  ]
+ }
+}

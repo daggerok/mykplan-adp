@@ -1,0 +1,45 @@
+@import "tailwindcss" source("./");
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+}
+
+/* chart colors, read by src/charts on mount and on every theme change */
+:root {
+  --chart-bg: #ffffff;
+  --chart-grid: #e2e8f0;
+  --chart-text: #334155;
+  --up: #16a34a;
+  --down: #dc2626;
+  --line: #2563eb;
+  --band: rgba(37, 99, 235, 0.08);
+}
+:root.dark {
+  --chart-bg: #1e293b;
+  --chart-grid: #334155;
+  --chart-text: #cbd5e1;
+  --up: #22c55e;
+  --down: #f87171;
+  --line: #60a5fa;
+  --band: rgba(96, 165, 250, 0.12);
+}
+
+html, body { margin: 0; }
+
+/* toolbar icon buttons and slide-down panels: the same look as daggerok/twitter and youtube (twitter src/index.css) */
+.tb{width:2.25rem;height:2.25rem;border-radius:.5rem;border:0;background:transparent;display:inline-flex;align-items:center;justify-content:center;font-size:1rem;color:#64748b;transition:background-color .15s,color .15s,transform .1s;flex:none;cursor:pointer}
+.tb:hover{background:#f1f5f9;color:#334155}
+.tb:active{transform:scale(.95)}
+.tb:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.tb.on{background:#e2e8f0;color:#334155}
+.dark .tb{color:#94a3b8}
+.dark .tb:hover{background:#334155;color:#e2e8f0}
+.dark .tb.on{background:#475569;color:#e2e8f0}
+.dark .tb.sun{color:#facc15}.dark .tb.sun:hover{color:#fde047;background:#1e293b}
+.slide-wrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s cubic-bezier(.4,0,.2,1),opacity .25s ease-out;opacity:0;overflow:hidden}
+.slide-wrap.open{grid-template-rows:1fr;opacity:1}
+.slide-inner{overflow:hidden;min-height:0}
+@media (prefers-reduced-motion:reduce){.slide-wrap{transition:none}}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.75rem 1rem;border-bottom:1px solid #e2e8f0;background:linear-gradient(to right,#f8fafc,rgba(241,245,249,.5))}
+.dark .panel-head{border-color:rgba(71,85,105,.5);background:linear-gradient(to right,rgba(15,23,42,.3),rgba(15,23,42,.1))}
