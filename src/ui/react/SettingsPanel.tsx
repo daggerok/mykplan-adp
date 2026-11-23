@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { loadConfig, mask, saveConfig } from '../../../shared/sheets/gis';
+import { loadConfig, mask, maskSpreadsheetUrl, parseSpreadsheetId, saveConfig, spreadsheetUrl } from '../../../shared/sheets/gis';
+import { MaskedField, RevealCopy } from './MaskedField';
 import { DEFAULT_BENCHMARKS } from '../../../shared/benchmarks/config';
 import type { Dataset } from '../../../shared/dataset';
 import { importFile, runState, settings, showDemo, type Settings, type Source } from '../../app/data';
@@ -13,13 +14,21 @@ import { APP_VERSION, isOlder } from '../../app/version';
 
 const field = 'min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 py-1 text-sm dark:border-slate-600 dark:bg-slate-900';
 const button = 'rounded-lg bg-slate-200 px-3 py-1.5 text-sm dark:bg-slate-700';
+const primary = 'rounded-lg bg-blue-600 px-3 py-1.5 text-sm text-white disabled:opacity-50';
 
 export function SettingsPanel({ ds, d, source, userscript, s }: { ds: Dataset | null; d: Derived | null; source: Source | null; userscript: string | null; s: Settings }) {
   const file = useRef<HTMLInputElement>(null);
   const [cfg, setCfg] = useState(loadConfig);
-  const [show, setShow] = useState(false);
-  const [log, setLog] = useState<string[]>([]);
-  const add = (l: string) => setLog((x) => [...x, l]);
+  const [showUrl, setShowUrl] = useState(false);
+  // saved on every change, like twitter: a pasted link is stored as its id, the field keeps what was typed
+  const change = (p: Partial<typeof cfg>) => {
+    const next = { ...cfg, ...p };
+    setCfg(next);
+    saveConfig(next);
+    handOff();
+  };
+  const sheetId = parseSpreadsheetId(cfg.spreadsheetId);
+  const sheetUrl = sheetId ? spreadsheetUrl(sheetId) : '';
   const run = useStore(runState);
   // every step is done once real data with the daily series is in
   const stepsDone = !!ds && source !== 'demo' && ds.dailyFunds.length > 0;
@@ -69,22 +78,33 @@ export function SettingsPanel({ ds, d, source, userscript, s }: { ds: Dataset | 
       </div>
 
       <H>{t('Google Sheets (the same OAuth client and spreadsheet as youtube and twitter, tabs mykplan_*)')}</H>
-      <label className="flex items-center gap-2">Client ID
-        <input className={field} value={show ? cfg.clientId : mask(cfg.clientId)} onChange={(e) => setCfg({ ...cfg, clientId: e.target.value })} onFocus={() => setShow(true)} />
-      </label>
-      <label className="flex items-center gap-2">{t('Spreadsheet URL')}
-        <input className={field} value={show ? cfg.spreadsheetId : mask(cfg.spreadsheetId)} onChange={(e) => setCfg({ ...cfg, spreadsheetId: e.target.value })} onFocus={() => setShow(true)} />
-      </label>
-      <div className="flex flex-wrap gap-2">
-        <button type="button" className={button} onClick={() => setShow((v) => !v)}>👁</button>
-        <button type="button" className={button} onClick={() => { saveConfig(cfg); handOff(); add(t('saved')); }}>{t('Save')}</button>
-        <button type="button" className={button} onClick={() => void connectGoogle()}>{t('Connect')}</button>
-        <button type="button" className={button} onClick={disconnectGoogle}>{t('Disconnect')}</button>
-        <button type="button" className={`${button} bg-blue-600 text-white dark:bg-blue-600`} disabled={!ds || !g.connected || g.busy} onClick={() => ds && void writeNow(ds)}>{t('Write all tabs now')}</button>
+      {/* like twitter: the connection with the spreadsheet link on top, the two values below; every change is saved at once */}
+      <div className={`rounded-xl border p-3 ${g.connected ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/40'}`}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="font-medium">{g.connected ? t('Connected to Google Sheets') : t('Not connected to Google Sheets')}</div>
+            {sheetUrl && (
+              <div className="mt-1 flex items-center gap-2">
+                <a className="break-all text-xs text-emerald-700 underline dark:text-emerald-400" href={sheetUrl} target="_blank" rel="noreferrer">{showUrl ? sheetUrl : maskSpreadsheetUrl(sheetUrl)}</a>
+                <RevealCopy label={t('spreadsheet link')} value={sheetUrl} shown={showUrl} onToggle={() => setShowUrl((v) => !v)} />
+              </div>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {g.connected
+              ? <button type="button" className={button} disabled={g.busy} onClick={disconnectGoogle}>{t('Disconnect')}</button>
+              : <button type="button" className={primary} disabled={g.busy || !cfg.clientId} onClick={() => void connectGoogle()}>{t('Connect Google')}</button>}
+            <button type="button" className={button} disabled={!ds || !g.connected || g.busy} onClick={() => ds && void writeNow(ds)}>{t('Write all tabs now')}</button>
+          </div>
+        </div>
       </div>
+      <MaskedField label="Google OAuth Client ID" value={cfg.clientId} mask={mask} placeholder="1234567890-abc.apps.googleusercontent.com"
+        onChange={(v) => change({ clientId: v.trim() })} hint={t('Public, no secret. Stored in this browser only.')} />
+      <MaskedField label={t('Spreadsheet ID or full URL')} value={cfg.spreadsheetId} mask={(v) => (v.includes('/d/') ? maskSpreadsheetUrl(v) : mask(v))}
+        placeholder="https://docs.google.com/spreadsheets/d/1abc…/edit" onChange={(v) => change({ spreadsheetId: v.trim() })} hint={t('The same spreadsheet as youtube and twitter can hold the mykplan_* tabs.')} />
       <p className="text-xs text-slate-500">{g.connected ? t('Connected: the mykplan_* tabs fill by themselves (the mykplan tab writes during runs, this page writes what it receives).') : t('Not connected: the page connects by itself when it opens or on the first click (decline in Google to skip); ☁️ connects by hand. Then the mykplan_* tabs fill by themselves, also during runs.')}{g.error ? ` ${t('Last error: {error}', { error: g.error })}` : ''}</p>
       {g.oldTabs.length > 0 && <p className="text-xs text-amber-600 dark:text-amber-400">{t('Old tabs in the spreadsheet, safe to delete by hand (their data is in the mykplan_* tabs now): {tabs}', { tabs: g.oldTabs.join(', ') })}</p>}
-      <pre className="whitespace-pre-wrap text-xs text-slate-500">{[...log, ...g.log.slice(-8)].join('\n')}</pre>
+      <pre className="whitespace-pre-wrap text-xs text-slate-500">{g.log.slice(-8).join('\n')}</pre>
     </div>
     {/* the first steps (or how to keep the data fresh) live here only: right of the settings on wide screens (from 1280 px), under them on narrow ones */}
     {/* narrow screens: steps not done yet go first, done ones (keep up to date) go under the settings */}

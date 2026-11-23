@@ -2,7 +2,7 @@
 /// <reference types="node" />
 /// <reference lib="esnext" />
 import { afterEach, describe, expect, test } from 'bun:test';
-import { CONFIG_KEY, GoogleAuth, loadConfig, mask, parseSpreadsheetId, saveConfig, type Gis, type GsConfig } from './gis';
+import { CONFIG_KEY, GoogleAuth, loadConfig, mask, maskSpreadsheetUrl, parseSpreadsheetId, saveConfig, type Gis, type GsConfig } from './gis';
 
 // placeholders only: no real client id, spreadsheet id or token anywhere in tests
 const SHEET_ID = 'sheet_ID-0123456789abcdef';
@@ -58,6 +58,8 @@ describe('config in localStorage', () => {
   test('mask keeps only the edges', () => {
     expect(mask('abcdefghijklmnop')).toBe('abcd••••••••mnop');
     expect(mask('short')).toBe('•••••');
+    expect(maskSpreadsheetUrl('https://docs.google.com/spreadsheets/d/1abcdefghijXYZ/edit')).toBe('https://docs.google.com/spreadsheets/d/1ab••••••••••••••••XYZ/edit');
+    expect(maskSpreadsheetUrl('')).toBe('');
   });
 });
 

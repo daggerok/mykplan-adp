@@ -264,3 +264,15 @@ export class GoogleAuth {
     } catch { /* GIS gone */ }
   }
 }
+
+/** A spreadsheet link with the middle of its id hidden (twitter and youtube Setup): the 👁 button shows it whole. */
+export function maskSpreadsheetUrl(url: string): string {
+  if (!url) return '';
+  const idx = url.indexOf('/d/');
+  if (idx === -1) return mask(url);
+  const prefix = url.slice(0, idx + 3);
+  const rest = url.slice(idx + 3);
+  const id = rest.split('/')[0] ?? '';
+  const masked = id.length <= 4 ? '••••••••' : id.slice(0, 3) + '••••••••••••••••' + id.slice(-3);
+  return prefix + masked + rest.slice(id.length);
+}
