@@ -34,6 +34,7 @@ export const RU_PANELS: Record<string, string> = {
   'Spreadsheet ID or full URL': 'ID таблицы или полная ссылка',
   'The same spreadsheet as youtube and twitter can hold the mykplan_* tabs.': 'Вкладки mykplan_* можно держать в той же таблице, что у youtube и twitter.',
   'Hide {label}': 'Скрыть {label}',
+  'Press 👁 to show and edit': 'Нажми 👁, чтобы показать и изменить',
   'Show {label}': 'Показать {label}',
   'Copy {label}': 'Скопировать {label}',
   Disconnect: 'Отключить',
