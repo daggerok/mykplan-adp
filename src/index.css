@@ -72,3 +72,7 @@ html, body { margin: 0; }
 .inp.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:500}
 .masked{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.05em;color:#059669}
 .dark .masked{color:#34d399}
+details.setup > summary{list-style:none;cursor:pointer}
+details.setup > summary::-webkit-details-marker{display:none}
+details.setup > summary .chev{display:inline-block;transition:transform .18s ease}
+details.setup[open] > summary .chev{transform:rotate(90deg)}

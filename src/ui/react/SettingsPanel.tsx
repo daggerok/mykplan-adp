@@ -15,6 +15,9 @@ import { APP_VERSION, isOlder } from '../../app/version';
 const field = 'inp';
 const button = 'btn sm';
 const primary = 'btn sm primary';
+const TAMPERMONKEY_URL = 'https://www.tampermonkey.net/';
+const CODE_ORIGIN = <code className="bg-emerald-100 px-1 dark:bg-emerald-800">{typeof location === 'undefined' ? '' : location.origin}</code>;
+const CODE_LOCAL = <code className="bg-emerald-100 px-1 dark:bg-emerald-800">http://localhost:1234</code>;
 
 export function SettingsPanel({ ds, d, source, userscript, s }: { ds: Dataset | null; d: Derived | null; source: Source | null; userscript: string | null; s: Settings }) {
   const file = useRef<HTMLInputElement>(null);
@@ -78,6 +81,35 @@ export function SettingsPanel({ ds, d, source, userscript, s }: { ds: Dataset | 
       </div>
 
       <H>{t('Google Sheets (the same OAuth client and spreadsheet as youtube and twitter, tabs mykplan_*)')}</H>
+      {/* the same setup block as twitter (src/main.tsx Settings) and youtube: what this is, the steps once, then the connection */}
+      <div className="space-y-1 text-xs text-slate-500 dark:text-slate-400">
+        <div>{withParts(t('{what} mykplan shows your 401k only in your own logged-in browser. {tm} is a Chrome extension that runs small programs ({userscripts}, one .user.js file each) on the sites you allow it. Our file mykplan-adp-sync.user.js reads your mykplan pages (read only); the same file, running on this page, hands the data to this viewer and writes it to your Google Sheet. Tampermonkey must therefore be allowed on mykplan.adp.com, online.adp.com and {host}.'), {
+          what: <strong className="text-slate-700 dark:text-slate-200">{t('What this is:')}</strong>, tm: <b>Tampermonkey</b>, userscripts: <b>userscripts</b>, host: <b>{location.hostname}</b>,
+        })}</div>
+        <div>{withParts(t('{title} this browser and your Google Sheet. Connect Google on another computer and ↻ loads the same data from the sheet.'), { title: <strong className="text-emerald-600 dark:text-emerald-400">{t('Auto-load + cross-device:')}</strong> })}</div>
+        <div>{withParts(t('{title} the data goes into the mykplan_* tabs of one spreadsheet; the YT-… tabs of youtube and the X-… tabs of twitter can live in the same file.'), { title: <strong className="text-blue-500">{t('Tabs:')}</strong> })}</div>
+      </div>
+      <details className="setup rounded-xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20" data-setup>
+        <summary className="px-4 py-3 text-sm font-semibold text-emerald-900 dark:text-emerald-200"><span className="chev">▸</span> {t('Google Sheets and Tampermonkey setup (once)')}</summary>
+        <ol className="mb-4 ml-8 mr-4 list-decimal space-y-1 text-xs text-emerald-900 dark:text-emerald-200">
+          <li>{withParts(t('Go to {console}, enable the {api}, OAuth consent screen (External, your email under Test users), create an OAuth 2.0 Client ID of type Web application with the authorized JavaScript origins {origin} and {local}. No secret is used'), {
+            console: <a className="underline text-emerald-600 dark:text-emerald-400" href="https://console.cloud.google.com/" target="_blank" rel="noreferrer">console.cloud.google.com</a>,
+            api: <b>Google Sheets API</b>,
+            origin: CODE_ORIGIN,
+            local: CODE_LOCAL,
+          })}</li>
+          <li>{withParts(t('Paste the Client ID below, press {connect}, then paste the url of your spreadsheet (the one youtube and twitter use is fine)'), { connect: <b>{t('Connect Google')}</b> })}</li>
+          <li>{withParts(t('Install {tm}; in Chrome 138+ open its extension details, turn on {allow} and give it site access to {mykplan}, {adp} and {host}'), {
+            tm: <a className="underline" href={TAMPERMONKEY_URL} target="_blank" rel="noreferrer">Tampermonkey</a>,
+            allow: <b>Allow User Scripts</b>, mykplan: <b>mykplan.adp.com</b>, adp: <b>online.adp.com</b>, host: <b>{location.hostname}</b>,
+          })}</li>
+          <li>{withParts(t('Open {script}: Tampermonkey shows its install page, press Install. Reload this page: the first dot in the toolbar turns green'), {
+            script: <a className="font-medium underline" href="./mykplan-adp-sync.user.js">mykplan-adp-sync.user.js</a>,
+          })}</li>
+          <li>{t('Press ⬇ in the toolbar: mykplan opens (log in there first), the corner panel collects; come back here and the data is in the viewer and in the mykplan_* tabs')}</li>
+        </ol>
+        <div className="px-4 pb-3 text-xs text-amber-700 dark:text-amber-300">{t('Security: only the public Client ID and the spreadsheet id are stored in this browser, the Google token lives in memory. Your 401k data goes from your browser to your Google Sheet and nowhere else.')}</div>
+      </details>
       {/* like twitter: the connection with the spreadsheet link on top, the two values below; every change is saved at once */}
       <div className={`rounded-xl border p-3 ${g.connected ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/40'}`}>
         <div className="flex flex-wrap items-center justify-between gap-2">
