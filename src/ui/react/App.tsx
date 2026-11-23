@@ -247,7 +247,7 @@ export function App() {
 
       {/* the footer is the bottom gutter: same height as the side gutter, text centered in it (gex FOOTER_CLASS) */}
       <footer className="flex min-h-4 items-center justify-center px-4 text-center text-[0.625rem] leading-tight text-slate-400 lg:min-h-6 lg:px-6">
-        <a href="https://gitlab.com/daggerok/mykplan-adp" target="_blank" rel="noreferrer" className="underline decoration-dotted transition-colors hover:text-slate-600 dark:hover:text-slate-200">daggerok &copy; {year}</a>
+        <a href="https://github.com/daggerok/mykplan-adp" target="_blank" rel="noreferrer" className="underline decoration-dotted transition-colors hover:text-slate-600 dark:hover:text-slate-200">daggerok &copy; {year}</a>
       </footer>
     </div>
   );

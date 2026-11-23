@@ -15,7 +15,7 @@ export function userscriptHeader(version: string, dev = false): string {
   return [
     '// ==UserScript==',
     '// @name         mykplan-adp sync',
-    '// @namespace    https://gitlab.com/daggerok/mykplan-adp',
+    '// @namespace    https://gitlab.com/daggerok/mykplan-adp', // kept: Tampermonkey tells scripts apart by name and namespace
     `// @version      ${version}`,
     '// @description  Reads your own ADP mykplan 401k pages in your logged-in browser (read only) and hands the data to the mykplan-adp viewer',
     '// @author       daggerok',
