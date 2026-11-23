@@ -12,9 +12,9 @@ import { t } from '../../app/i18n';
 import { H } from './screens/Cards';
 import { APP_VERSION, isOlder } from '../../app/version';
 
-const field = 'min-w-0 flex-1 rounded border border-slate-300 bg-white px-2 py-1 text-sm dark:border-slate-600 dark:bg-slate-900';
-const button = 'rounded-lg bg-slate-200 px-3 py-1.5 text-sm dark:bg-slate-700';
-const primary = 'rounded-lg bg-blue-600 px-3 py-1.5 text-sm text-white disabled:opacity-50';
+const field = 'inp';
+const button = 'btn sm';
+const primary = 'btn sm primary';
 
 export function SettingsPanel({ ds, d, source, userscript, s }: { ds: Dataset | null; d: Derived | null; source: Source | null; userscript: string | null; s: Settings }) {
   const file = useRef<HTMLInputElement>(null);
@@ -45,7 +45,7 @@ export function SettingsPanel({ ds, d, source, userscript, s }: { ds: Dataset | 
       <div className="flex flex-wrap items-center gap-2">
         <span>{t('Userscript')}: {userscript ? <b>{t('{version} installed', { version: userscript })}</b> : t('not seen on this page')}</span>
         {/* always here: the steps column hides its Install button once everything is done */}
-        <a className={`${button} ${isOlder(userscript, APP_VERSION) || !userscript ? 'bg-blue-600 text-white dark:bg-blue-600' : ''}`} href="./mykplan-adp-sync.user.js" data-install-script>
+        <a className={isOlder(userscript, APP_VERSION) || !userscript ? primary : button} href="./mykplan-adp-sync.user.js" data-install-script>
           {!userscript ? t('Install script') : isOlder(userscript, APP_VERSION) ? t('Update to {version}', { version: APP_VERSION }) : t('Reinstall script')}
         </a>
         {isOlder(userscript, APP_VERSION) && <span className="text-xs text-slate-500">{t('Tampermonkey shows Install: press it, then reload this page and the mykplan tab')}</span>}
@@ -85,14 +85,14 @@ export function SettingsPanel({ ds, d, source, userscript, s }: { ds: Dataset | 
             <div className="font-medium">{g.connected ? t('Connected to Google Sheets') : t('Not connected to Google Sheets')}</div>
             {sheetUrl && (
               <div className="mt-1 flex items-center gap-2">
-                <a className="break-all text-xs text-emerald-700 underline dark:text-emerald-400" href={sheetUrl} target="_blank" rel="noreferrer">{showUrl ? sheetUrl : maskSpreadsheetUrl(sheetUrl)}</a>
+                <a className="masked break-all text-xs underline" href={sheetUrl} target="_blank" rel="noreferrer">{showUrl ? sheetUrl : maskSpreadsheetUrl(sheetUrl)}</a>
                 <RevealCopy label={t('spreadsheet link')} value={sheetUrl} shown={showUrl} onToggle={() => setShowUrl((v) => !v)} />
               </div>
             )}
           </div>
           <div className="flex flex-wrap gap-2">
             {g.connected
-              ? <button type="button" className={button} disabled={g.busy} onClick={disconnectGoogle}>{t('Disconnect')}</button>
+              ? <button type="button" className="btn sm danger" disabled={g.busy} onClick={disconnectGoogle}>{t('Disconnect')}</button>
               : <button type="button" className={primary} disabled={g.busy || !cfg.clientId} onClick={() => void connectGoogle()}>{t('Connect Google')}</button>}
             <button type="button" className={button} disabled={!ds || !g.connected || g.busy} onClick={() => ds && void writeNow(ds)}>{t('Write all tabs now')}</button>
           </div>
