@@ -13,6 +13,19 @@ export interface Settings {
   real: boolean;
   monteCarloPaths: number;
   benchmarks: string[];
+  // chart colors chosen in ⚙️ (owner 2026-11-23: "bars candles colors also needs to be configurable"); empty = the theme's
+  chartColors: ChartColors;
+}
+
+export interface ChartColors { up?: string; down?: string; line?: string; bars?: string }
+
+// the CSS variables the charts read (src/charts/chart.ts): a chosen color wins over both themes; bars are see-through
+export function chartColorVars(c: ChartColors): Record<string, string | null> {
+  const rgba = (hex: string, a: number) => {
+    const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+    return m ? `rgba(${parseInt(m[1]!, 16)}, ${parseInt(m[2]!, 16)}, ${parseInt(m[3]!, 16)}, ${a})` : null;
+  };
+  return { '--up': c.up ?? null, '--down': c.down ?? null, '--line': c.line ?? null, '--bars': c.bars ? rgba(c.bars, 0.35) : null };
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -22,6 +35,7 @@ export const DEFAULT_SETTINGS: Settings = {
   real: false,
   monteCarloPaths: 5000,
   benchmarks: ['SPY', 'QQQ', 'SMH', 'SOXQ', 'VTV', 'RSP', 'DIVO', 'SCHD'],
+  chartColors: {},
 };
 
 const SETTINGS_KEY = 'mykplan-adp-settings';

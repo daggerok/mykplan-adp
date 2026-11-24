@@ -5,7 +5,9 @@ import { periodKey, type Timeframe } from '../../../../shared/dates';
 import { BENCH_COLORS, benchmarkLine, benchmarkTr } from '../../../app/benchmarks';
 import type { Dataset } from '../../../../shared/dataset';
 import type { Derived } from '../../../app/derive';
-import { mountChart, type ChartHandle, type Overlay } from '../../../charts/chart';
+import { mountChart, type ChartHandle, type ChartMarker, type Overlay } from '../../../charts/chart';
+import { settings } from '../../../app/data';
+import { ChartFrame } from '../ChartFrame';
 import { pct, usd } from '../format';
 import { Table } from '../Table';
 import { useStore } from '../useStore';
@@ -14,7 +16,6 @@ import { lang, t } from '../../../app/i18n';
 const TFS: Timeframe[] = ['1D', '1W', '1M', '1Q', '1Y'];
 const RANGES = ['1M', '3M', '6M', 'YTD', '1Y', '3Y', 'All'] as const;
 const unitOf = (tf: Timeframe): string => ({ '1D': t('days'), '1W': t('weeks'), '1M': t('months'), '1Q': t('quarters'), '1Y': t('years') })[tf];
-const WHAT_IF_COLOR = '#22d3ee';
 type Range = (typeof RANGES)[number];
 
 function rangeStart(last: string, r: Range): string | null {
@@ -36,9 +37,21 @@ export function onCandles(data: Array<{ date: string; value: number }>, tf: Time
 }
 
 const btn = (on: boolean) => `rounded-md px-2 py-1 text-xs ${on ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700'}`;
+const sep = <span className="mx-1 text-slate-300">|</span>;
+
+// what the chart shows besides the main line (owner 2026-11-23: buys and rebalances off by default), remembered per browser
+interface Show { buys: boolean; rebalances: boolean; rates: boolean; bars: boolean }
+const SHOW_KEY = 'mykplan-adp-chart-show';
+const DEFAULT_SHOW: Show = { buys: false, rebalances: false, rates: true, bars: true };
+const loadShow = (): Show => { try { return { ...DEFAULT_SHOW, ...(JSON.parse(localStorage.getItem(SHOW_KEY) ?? '{}') as Partial<Show>) }; } catch { return DEFAULT_SHOW; } };
+const saveShow = (v: Show) => { try { localStorage.setItem(SHOW_KEY, JSON.stringify(v)); } catch { /* private window */ } };
+const KIND_SHOWN: Record<ChartMarker['kind'], keyof Show> = { contribution: 'buys', rebalance: 'rebalances', rate: 'rates' };
+
+type Tr = { asOf: string | null; points: TrPoint[] } | { error: string };
 
 export function ChartScreen({ d, ds, benchmarks, dark }: { d: Derived; ds: Dataset; benchmarks: string[]; dark: boolean }) {
   const language = useStore(lang);
+  const colors = JSON.stringify(useStore(settings).chartColors ?? {});
   const el = useRef<HTMLDivElement>(null);
   const chart = useRef<ChartHandle | null>(null);
   const [tf, setTf] = useState<Timeframe>('1W');
@@ -46,12 +59,14 @@ export function ChartScreen({ d, ds, benchmarks, dark }: { d: Derived; ds: Datas
   // performance per candle minus the compared index over the same days
   const [series, setSeries] = useState<'performance' | 'value' | 'vs'>('performance');
   const [cmp, setCmp] = useState(() => (benchmarks.includes('SPY') ? 'SPY' : benchmarks[0] ?? 'SPY'));
-  const [tr, setTr] = useState<{ ticker: string; asOf: string | null; points: TrPoint[] } | null>(null);
-  const [trNote, setTrNote] = useState('');
+  const [trs, setTrs] = useState<Record<string, Tr>>({});
   const [range, setRange] = useState<Range>('All');
   const [log, setLog] = useState(false);
+  // "Compare with": index lines on Performance, "all in" lines on Value $ (each only while its button is on)
   const [bench, setBench] = useState<string[]>([]);
   const [benchNote, setBenchNote] = useState('');
+  const [show, setShowState] = useState<Show>(loadShow);
+  const toggleShow = (k: keyof Show) => setShowState((v) => { const next = { ...v, [k]: !v[k] }; saveShow(next); return next; });
 
   const base = series === 'value' ? d.value : d.nav;
   const last = base[base.length - 1]?.date ?? '';
@@ -63,21 +78,27 @@ export function ChartScreen({ d, ds, benchmarks, dark }: { d: Derived; ds: Datas
     return m;
   }, [d.paychecks]);
 
-  // the compared index over the whole history (the what-if line starts with the first contribution)
+  // the indexes over the whole history: the compared one (vs and the funds table) and, on Value $, every "Compare with"
   const firstDay = d.portfolio[0]?.date ?? '';
+  const needed = Array.from(new Set([cmp, ...(series === 'value' ? bench : [])])).sort().join(',');
   useEffect(() => {
     if (!firstDay) return undefined;
     let live = true;
-    setTrNote(t('loading {ticker}…', { ticker: cmp }));
-    benchmarkTr(cmp, firstDay)
-      .then((r) => { if (live) { setTr({ ticker: cmp, ...r }); setTrNote(r.asOf && r.asOf < last ? t('{ticker} as of {day} ⚠ behind', { ticker: cmp, day: r.asOf }) : ''); } })
-      .catch((e: unknown) => { if (live) { setTr(null); setTrNote(t('{ticker} failed: {error}', { ticker: cmp, error: e instanceof Error ? e.message : String(e) })); } });
+    needed.split(',').filter((x) => x && !(x in trs)).forEach((ticker) => {
+      benchmarkTr(ticker, firstDay)
+        .then((r) => { if (live) setTrs((m) => ({ ...m, [ticker]: r })); })
+        .catch((e: unknown) => { if (live) setTrs((m) => ({ ...m, [ticker]: { error: e instanceof Error ? e.message : String(e) } })); });
+    });
     return () => { live = false; };
-  }, [cmp, firstDay, last, language]);
-  const ready = tr && tr.ticker === cmp ? tr : null;
-  const vsRows = useMemo(() => (ready ? periodVsBench(from ? d.portfolio.filter((p) => p.date >= from) : d.portfolio, ready.points, tf) : []), [ready, d.portfolio, from, tf]);
-  const whatIf = useMemo(() => (ready ? allInBench(d.portfolio, ready.points) : []), [ready, d.portfolio]);
-  const funds = useMemo(() => (ready ? fundsVsBench(ds.dailyFunds, ready.points) : []), [ready, ds.dailyFunds]);
+  }, [needed, firstDay]); // trs is read only to skip the tickers already loaded
+  const points = (ticker: string): TrPoint[] | null => { const r = trs[ticker]; return r && 'points' in r ? r.points : null; };
+  const cmpPoints = points(cmp);
+  const vsRows = useMemo(() => (cmpPoints ? periodVsBench(from ? d.portfolio.filter((p) => p.date >= from) : d.portfolio, cmpPoints, tf) : []), [cmpPoints, d.portfolio, from, tf]);
+  const funds = useMemo(() => (cmpPoints ? fundsVsBench(ds.dailyFunds, cmpPoints) : []), [cmpPoints, ds.dailyFunds]);
+  const whatIfs = useMemo(() => (series !== 'value' ? [] : bench.flatMap((ticker) => {
+    const p = points(ticker);
+    return p ? [{ ticker, rows: allInBench(d.portfolio, p) }] : [];
+  })), [series, bench, trs, d.portfolio]);
 
   useEffect(() => {
     if (!el.current) return undefined;
@@ -85,112 +106,131 @@ export function ChartScreen({ d, ds, benchmarks, dark }: { d: Derived; ds: Datas
     return () => { chart.current?.destroy(); chart.current = null; };
   }, []);
 
-  useEffect(() => { chart.current?.applyTheme(); }, [dark]);
+  useEffect(() => { chart.current?.applyTheme(); }, [dark, colors]);
 
   useEffect(() => {
     const c = chart.current;
     if (!c) return;
-    const points = shown.map((p) => ({ date: p.date, value: p.value, volume: flowsByDay.get(p.date) ?? 0 }));
+    const pts = shown.map((p) => ({ date: p.date, value: p.value, volume: flowsByDay.get(p.date) ?? 0 }));
+    const barsName = t('Contributions per candle, $');
     if (series === 'vs') {
       c.setBars(vsRows.filter((r) => r.diff !== null).map((r) => ({ date: r.from, value: r.diff! * 100, up: r.diff! >= 0 })));
       c.setVolume([]);
     } else if (tf === '1D') {
-      c.setLine(points);
-      c.setVolume(points.map((p) => ({ date: p.date, value: p.volume })));
+      c.setLine(pts);
+      c.setVolume(show.bars ? pts.map((p) => ({ date: p.date, value: p.volume })) : [], barsName);
     } else {
-      const cs = candles(points, tf);
+      const cs = candles(pts, tf);
       c.setCandles(cs);
-      c.setVolume(cs.map((x) => ({ date: x.date, value: x.volume })));
+      c.setVolume(show.bars ? cs.map((x) => ({ date: x.date, value: x.volume })) : [], barsName);
     }
-    const firstDay = shown[0]?.date ?? '';
+    const firstShown = shown[0]?.date ?? '';
     // only markers inside the shown days: a later one would be pinned to the last candle (they stacked there)
-    const lastDay = shown[shown.length - 1]?.date ?? '';
-    const inRange = d.markers.filter((m) => m.date >= firstDay && m.date <= lastDay);
+    const lastShown = shown[shown.length - 1]?.date ?? '';
+    const inRange = d.markers.filter((m) => m.date >= firstShown && m.date <= lastShown && show[KIND_SHOWN[m.kind]]);
     // on candles a marker sits on its candle's first day
     const keyed = tf === '1D' ? inRange : inRange.map((m) => {
       const k = periodKey(m.date, tf);
-      const candleDay = points.find((p) => periodKey(p.date, tf) === k)?.date ?? m.date;
+      const candleDay = pts.find((p) => periodKey(p.date, tf) === k)?.date ?? m.date;
       return { ...m, date: candleDay };
     });
-    c.setMarkers(keyed.filter((m) => m.kind !== 'contribution' || tf === '1D'));
+    c.setMarkers(keyed);
     // the scale says what its numbers are, the legend names the main line
     if (series === 'value') c.setUnit('$', t('Account value, $'));
     else if (series === 'vs') c.setUnit('%', t('Your return minus {cmp}, percentage points', { cmp }));
     else c.setUnit('index', t('Your return, 100 = first day'));
     c.setLog(series !== 'vs' && log);
     c.fit();
-  }, [shown, tf, log, d.markers, flowsByDay, series, vsRows, cmp, language]);
+  }, [shown, tf, log, d.markers, flowsByDay, series, vsRows, cmp, language, show, colors]);
 
   useEffect(() => {
     const c = chart.current;
     const start = shown[0];
     if (!c || !start) return;
     const candleDays = tf === '1D' ? [] : candles(shown.map((p) => ({ date: p.date, value: p.value })), tf).map((x) => x.date);
-    // value: the same contributions all in the compared index, in dollars like the value line
-    const extra: Overlay[] = series === 'value' && whatIf.length
-      ? [{ name: t('All in {ticker}', { ticker: cmp }), color: WHAT_IF_COLOR, data: onCandles(whatIf.filter((p) => p.date >= start.date).map((p) => ({ date: p.date, value: p.value / 100 })), tf, candleDays) }]
-      : [];
-    if (!bench.length || series === 'vs') { c.setOverlays(extra); setBenchNote(''); return; }
+    if (series === 'vs') { c.setOverlays([]); setBenchNote(''); return; }
+    if (series === 'value') {
+      // the same contributions on the same days, all bought into each compared index, in dollars like the value line
+      c.setOverlays(whatIfs.map((w) => ({ name: t('All in {ticker}', { ticker: w.ticker }), color: BENCH_COLORS[w.ticker] ?? '#94a3b8', data: onCandles(w.rows.filter((p) => p.date >= start.date).map((p) => ({ date: p.date, value: p.value / 100 })), tf, candleDays) })));
+      setBenchNote('');
+      return;
+    }
+    if (!bench.length) { c.setOverlays([]); setBenchNote(''); return; }
     let live = true;
     setBenchNote(t('loading…'));
     void Promise.all(bench.map((ticker) => benchmarkLine(ticker, start.date, start.value).then((r) => ({ ticker, ...r })).catch((e: unknown) => ({ ticker, asOf: null, data: [], error: String(e) }))))
       .then((list) => {
         if (!live) return;
-        c.setOverlays(list.map((x) => ({ name: x.ticker, color: BENCH_COLORS[x.ticker] ?? '#94a3b8', data: onCandles(x.data, tf, candleDays) })).concat(extra));
+        c.setOverlays(list.map((x) => ({ name: x.ticker, color: BENCH_COLORS[x.ticker] ?? '#94a3b8', data: onCandles(x.data, tf, candleDays) })) as Overlay[]);
         c.fit();
-        setBenchNote(list.map((x) => {
-          if ('error' in x) return t('{ticker} failed: {error}', { ticker: x.ticker, error: x.error });
-          const p = { ticker: x.ticker, day: x.asOf ?? '?' };
-          return x.asOf && x.asOf < last ? t('{ticker} as of {day} ⚠ behind', p) : t('{ticker} as of {day}', p);
-        }).join(' · '));
+        setBenchNote(list.filter((x) => 'error' in x || (x.asOf && x.asOf < last)).map((x) => ('error' in x ? t('{ticker} failed: {error}', { ticker: x.ticker, error: x.error }) : t('{ticker} as of {day} ⚠ behind', { ticker: x.ticker, day: x.asOf ?? '?' }))).join(' · '));
       });
     return () => { live = false; };
-  }, [bench, shown, last, tf, series, whatIf, cmp, language]);
+  }, [bench, shown, last, tf, series, whatIfs, language]);
 
-  // one-line results of the comparison for the shown range
+  // one-line results under the chart, for the shown range
   const compared = vsRows.filter((r) => r.diff !== null);
   const beat = compared.filter((r) => r.diff! > 0).length;
   const chained = (k: 'mine' | 'bench') => compared.reduce((g, r) => g * (1 + (r[k] ?? 0)), 1) - 1;
   const lastValue = d.portfolio[d.portfolio.length - 1];
-  const lastWhatIf = whatIf[whatIf.length - 1];
+  const notes = [benchNote, ...Array.from(new Set([cmp, ...(series === 'value' ? bench : [])])).map((ticker) => {
+    const r = trs[ticker];
+    if (!r) return '';
+    if ('error' in r) return t('{ticker} failed: {error}', { ticker, error: r.error });
+    return r.asOf && r.asOf < last ? t('{ticker} as of {day} ⚠ behind', { ticker, day: r.asOf }) : '';
+  })].filter(Boolean);
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        {TFS.map((t) => <button key={t} type="button" className={btn(tf === t)} onClick={() => setTf(t)}>{t}</button>)}
-        <span className="mx-1 text-slate-300">|</span>
+        {TFS.map((x) => <button key={x} type="button" className={btn(tf === x)} onClick={() => setTf(x)}>{x}</button>)}
+        {sep}
         <button type="button" className={btn(series === 'performance')} onClick={() => setSeries('performance')}>{t('Performance')}</button>
         <button type="button" className={btn(series === 'value')} onClick={() => setSeries('value')}>{t('Value $')}</button>
         <button type="button" className={btn(series === 'vs')} onClick={() => setSeries('vs')} title={t('Your return minus {cmp} per candle, over the same days', { cmp })}>vs {cmp} %</button>
         <select value={cmp} onChange={(e) => setCmp(e.target.value)} className="rounded-md bg-slate-200 px-1 py-1 text-xs dark:bg-slate-700" title={t('The index your fund picks are compared with')}>
-          {benchmarks.map((t) => <option key={t} value={t}>{t}</option>)}
+          {benchmarks.map((x) => <option key={x} value={x}>{x}</option>)}
         </select>
-        <span className="mx-1 text-slate-300">|</span>
+        {sep}
         {RANGES.map((r) => <button key={r} type="button" className={btn(range === r)} onClick={() => setRange(r)}>{r}</button>)}
-        {series !== 'vs' && <button type="button" className={btn(log)} onClick={() => setLog((v) => !v)}>log</button>}
+        {series !== 'vs' && <button type="button" className={btn(log)} onClick={() => setLog((v) => !v)} title={t('Logarithmic scale: the same percent move looks the same size at any level')}>log</button>}
+        {series !== 'vs' && (
+          <>
+            {sep}
+            <span className="text-xs text-slate-500" title={series === 'value' ? t('Each one adds a line: the same contributions on the same days, all bought into that index') : t('Each one adds its total return line, started at your line on the first shown day')}>{t('Compare with')}:</span>
+            {benchmarks.map((x) => (
+              <button key={x} type="button" className={btn(bench.includes(x))} style={bench.includes(x) ? { background: BENCH_COLORS[x] } : undefined} onClick={() => setBench((b) => (b.includes(x) ? b.filter((y) => y !== x) : [...b, x]))}>{x}</button>
+            ))}
+          </>
+        )}
+        {sep}
+        <span className="text-xs text-slate-500">{t('Show')}:</span>
+        <button type="button" className={btn(show.buys)} onClick={() => toggleShow('buys')} title={t('Green arrows: the days your paychecks bought the funds')}>{t('Buys')}</button>
+        <button type="button" className={btn(show.rebalances)} onClick={() => toggleShow('rebalances')} title={t('Amber squares "⇄ N funds": money moved between funds, N funds took part')}>{t('Rebalances')}</button>
+        <button type="button" className={btn(show.rates)} onClick={() => toggleShow('rates')} title={t('Blue dots "Roth N%": your requests to change the contribution percent')}>{t('Rate changes')}</button>
+        {series !== 'vs' && <button type="button" className={btn(show.bars)} onClick={() => toggleShow('bars')} title={t('Bars along the bottom: the money your paychecks put in during each candle')}>{t('Contributions')}</button>}
       </div>
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="text-slate-500">{t('Benchmarks (total return from the first shown day):')}</span>
-        {benchmarks.map((t) => (
-          <button key={t} type="button" className={btn(bench.includes(t))} style={bench.includes(t) ? { background: BENCH_COLORS[t] } : undefined} onClick={() => setBench((b) => (b.includes(t) ? b.filter((x) => x !== t) : [...b, t]))}>{t}</button>
-        ))}
-        <span className="text-slate-500">{benchNote}</span>
-      </div>
-      {trNote && <div className="text-xs text-amber-600">{trNote}</div>}
+      <ChartFrame elRef={el} view={() => chart.current} className="h-[62vh] min-h-[340px]" data="chart" />
       {series === 'vs' && compared.length > 0 && (
         <div className="text-sm">
           {t('Beat {cmp} in', { cmp })} <b>{t('{n} of {m}', { n: beat, m: compared.length })}</b> {unitOf(tf)} · {t('your picks')} <b>{pct(chained('mine'))}</b> {t('vs {cmp}', { cmp })} <b>{pct(chained('bench'))}</b> {t('over the shown range')}
           <span className="text-slate-500"> {t('(bars: your return minus {cmp}, percentage points)', { cmp })}</span>
         </div>
       )}
-      {series === 'value' && lastValue && lastWhatIf && (
+      {series === 'value' && lastValue && (
         <div className="text-sm">
-          {t('Today: your picks')} <b>{usd(lastValue.end)}</b> · {t('all in {cmp}', { cmp })} <b>{usd(lastWhatIf.value)}</b> · {t('difference')}{' '}
-          <b className={lastValue.end >= lastWhatIf.value ? 'text-green-600' : 'text-red-600'}>{lastValue.end >= lastWhatIf.value ? '+' : ''}{usd(lastValue.end - lastWhatIf.value)}</b>
-          <span className="text-slate-500"> {t('(the same contributions on the same days, all bought into {cmp})', { cmp })}</span>
+          {t('Today: your picks')} <b>{usd(lastValue.end)}</b>
+          {whatIfs.map((w) => {
+            const v = w.rows[w.rows.length - 1]?.value;
+            if (v === undefined) return null;
+            return (
+              <span key={w.ticker}> · {t('all in {cmp}', { cmp: w.ticker })} <b>{usd(v)}</b> (<b className={lastValue.end >= v ? 'text-green-600' : 'text-red-600'}>{lastValue.end >= v ? '+' : ''}{usd(lastValue.end - v)}</b>)</span>
+            );
+          })}
+          <span className="text-slate-500"> {whatIfs.length ? t('(each "all in": the same contributions on the same days, all bought into that index)') : t('(press an index in "Compare with" to see the same money all in it)')}</span>
         </div>
       )}
-      <div ref={el} className="h-[60vh] min-h-[320px] w-full" data-chart />
+      {notes.length > 0 && <div className="text-xs text-amber-600">{notes.join(' · ')}</div>}
       {series === 'vs' && (
         <Table name={`periods-vs-${cmp}`} rows={vsRows} columns={[
           { key: 'k', label: t('Period'), text: (r) => r.key },

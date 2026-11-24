@@ -20,6 +20,10 @@ export function trOn(points: TrPoint[], date: string): number | null {
   return at >= 0 ? points[at]!.tr : null;
 }
 
+// days after the index's last close are left out of every comparison: counting them as 0% for the index turned the
+// account's own move on that day into a whole difference (2026-11-22: a -3.5% last bar when SPY was a day behind)
+export const pastEnd = (points: TrPoint[], date: string): boolean => points.length > 0 && date > points[points.length - 1]!.date;
+
 // the index return of one day, or null when the series does not cover it
 export function benchDay(points: TrPoint[], date: string): number | null {
   const now = trOn(points, date);
@@ -42,7 +46,7 @@ export function periodVsBench(days: DailyPortfolio[], bench: TrPoint[], tf: Time
     const key = periodKey(d.date, tf);
     if (!cur || cur.key !== key) { close(); cur = { key, from: d.date, to: d.date, g: 1, b: 1, covered: true }; }
     cur.to = d.date;
-    if (d.begin <= 0) continue; // no money yet: nothing to compare on that day
+    if (d.begin <= 0 || pastEnd(bench, d.date)) continue; // no money yet, or no index close yet: nothing to compare
     cur.g *= 1 + d.dayReturn;
     const r = benchDay(bench, d.date);
     if (r === null) cur.covered = false; else cur.b *= 1 + r;
@@ -59,6 +63,7 @@ export function allInBench(days: DailyPortfolio[], bench: TrPoint[]): WhatIf[] {
   const out: WhatIf[] = [];
   let units = 0;
   days.forEach((d, i) => {
+    if (pastEnd(bench, d.date)) return; // the index has no close for that day yet
     const tr = trOn(bench, d.date);
     if (tr === null || tr <= 0) return;
     if (i === 0 && d.begin > 0) {
@@ -85,7 +90,7 @@ export function fundsVsBench(rows: DailyFund[], bench: TrPoint[]): FundVsBench[]
     list.forEach((f) => {
       if (f.endValue > 0) { if (!from) from = f.date; to = f.date; }
       const begin = fundBegin(f);
-      if (begin <= 0) return;
+      if (begin <= 0 || pastEnd(bench, f.date)) return;
       days++;
       g *= 1 + (f.endValue - begin - f.contributions - f.transfersIn - f.transfersOut) / begin;
       const r = benchDay(bench, f.date);

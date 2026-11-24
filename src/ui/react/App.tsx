@@ -1,7 +1,7 @@
 /// <reference lib="esnext" />
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { themeIcon, themeTitle } from '../../../shared/theme';
-import { askRun, askStop, clearDemo, dataset, runIsLive, runState, settings } from '../../app/data';
+import { askRun, askStop, chartColorVars, clearDemo, dataset, runIsLive, runState, settings } from '../../app/data';
 import { derive } from '../../app/derive';
 import { connectGoogle, disconnectGoogle, loadFromSheets, sheets } from '../../app/google';
 import { toCsv } from './filter';
@@ -22,6 +22,7 @@ import { StatementsScreen } from './screens/StatementsScreen';
 import { TransactionsScreen } from './screens/TransactionsScreen';
 import { useStore } from './useStore';
 import { help } from './help';
+import { Logo } from './Logo';
 import { LANG_FLAGS, lang, setLang, t } from '../../app/i18n';
 import { useTheme } from './useTheme';
 
@@ -128,6 +129,11 @@ export function App() {
 
   const { ds, source, error } = useStore(dataset);
   const s = useStore(settings);
+  // chart colors chosen in ⚙️ override the theme's CSS variables the charts read
+  useEffect(() => {
+    const vars = chartColorVars(s.chartColors ?? {});
+    Object.keys(vars).forEach((k) => { const v = vars[k]; if (v) document.documentElement.style.setProperty(k, v); else document.documentElement.style.removeProperty(k); });
+  }, [s.chartColors]);
   const run = useStore(runState);
   // re-render every 20 s: a run whose tab was closed stops counting as live, and ⏹ turns back into ⬇ 🔄 (review 2026-11-22)
   const [, tick] = useState(0);
@@ -153,7 +159,13 @@ export function App() {
       <div className="flex min-h-0 flex-1 flex-col gap-4 px-4 pt-4 lg:gap-6 lg:px-6 lg:pt-6">
       <div className="flex shrink-0 flex-col">
       <header ref={headerRef} data-wrapped={wrapped ? 'yes' : 'no'} className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 dark:border-slate-700 dark:bg-slate-800">
-        <h1 ref={titleRef} className="text-base font-semibold">mykplan-adp</h1>
+        {/* the mark leads back to the chart (the first screen) and to the top, like a home link */}
+        <h1 ref={titleRef} className="m-0 leading-none">
+          <button type="button" className="block rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500" title={t('mykplan-adp: back to the chart')} aria-label="mykplan-adp"
+            onClick={() => { setScreen('Chart'); document.querySelector('main')?.scrollTo({ top: 0 }); }} data-home>
+            <Logo size={30} />
+          </button>
+        </h1>
         {/* the screens appear only when there is something to show on them (data with the daily prices) */}
         {/* below 1280 px the tabs take their own row under the buttons, so none is cut off */}
         {d ? <nav ref={navRef} className={`order-last flex basis-full gap-1 overflow-x-auto [scrollbar-width:none] xl:order-none xl:basis-auto xl:flex-1 [&::-webkit-scrollbar]:hidden ${wrapped ? 'justify-evenly' : ''}`} aria-label="Screens">

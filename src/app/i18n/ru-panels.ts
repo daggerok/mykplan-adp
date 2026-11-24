@@ -129,4 +129,11 @@ export const RU_PANELS: Record<string, string> = {
   'Open {script}: Tampermonkey shows its install page, press Install. Reload this page: the first dot in the toolbar turns green': 'Открой {script}: Tampermonkey покажет страницу установки, нажми Install. Обнови эту страницу: первая точка вверху станет зелёной',
   'Press ⬇ in the toolbar: mykplan opens (log in there first), the corner panel collects; come back here and the data is in the viewer and in the mykplan_* tabs': 'Нажми ⬇ вверху: откроется mykplan (сначала войди), панель в углу соберёт данные; вернись сюда - данные будут на этой странице и во вкладках mykplan_*',
   'Security: only the public Client ID and the spreadsheet id are stored in this browser, the Google token lives in memory. Your 401k data goes from your browser to your Google Sheet and nowhere else.': 'Безопасность: в этом браузере хранятся только открытый Client ID и id таблицы, токен Google живёт только в памяти. Данные твоего 401k идут из твоего браузера в твою Google-таблицу и больше никуда.',
+  // chart colors (2026-11-23)
+  'Chart colors': 'Цвета графика',
+  'Rising candles': 'Растущие свечи',
+  'Falling candles': 'Падающие свечи',
+  'Your line': 'Твоя линия',
+  'Contribution bars': 'Столбики взносов',
+  'Theme colors': 'Цвета темы',
 };

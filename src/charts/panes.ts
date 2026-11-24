@@ -3,6 +3,7 @@
 import { HistogramSeries, LineSeries, createChart, type IChartApi, type ISeriesApi, type Time } from 'lightweight-charts';
 import { PAGE_SCROLLS, RIGHT_ROOM } from './chart';
 import { priceFormat, roomFor, type Unit } from './units';
+import { attachView, type ViewControls } from './view';
 import { t } from '../app/i18n';
 import { mountLegend, type LegendGroup } from './legend';
 
@@ -37,11 +38,17 @@ const withUnit = (x: PaneSeries): string => {
 
 const MARGINS = { scaleMargins: { top: 0.12, bottom: 0.08 } };
 
-export interface PanesHandle { set(series: PaneSeries[]): void; applyTheme(): void; destroy(): void }
+export interface PanesHandle extends Pick<ViewControls, 'zoom' | 'pan' | 'reset'> { set(series: PaneSeries[]): void; applyTheme(): void; destroy(): void }
 
 export function mountPanes(el: HTMLElement): PanesHandle {
   const chart: IChartApi = createChart(el, { autoSize: true, ...theme(), ...PAGE_SCROLLS, timeScale: { borderVisible: false, ...RIGHT_ROOM }, rightPriceScale: { borderVisible: false } });
   const legend = mountLegend(el);
+  let bars = 0;
+  const fitAll = () => {
+    chart.timeScale().applyOptions({ rightOffset: roomFor(bars) });
+    chart.timeScale().fitContent();
+  };
+  const view = attachView(chart, el, fitAll);
   let named: PaneSeries[] = [];
   // one legend per pane, at the pane's top: the pane heights change with the window, so they are measured again
   const placeLegend = () => {
@@ -77,12 +84,15 @@ export function mountPanes(el: HTMLElement): PanesHandle {
         p.setStretchFactor(i === 0 ? 2 : 1);
         chart.priceScale('right', i).applyOptions(MARGINS);
       });
-      chart.timeScale().applyOptions({ rightOffset: roomFor(Math.max(0, ...series.map((x) => x.data.length))) });
-      chart.timeScale().fitContent();
+      bars = Math.max(0, ...series.map((x) => x.data.length));
+      fitAll();
       named = series;
       requestAnimationFrame(placeLegend);
     },
     applyTheme() { chart.applyOptions(theme()); placeLegend(); },
-    destroy() { resize.disconnect(); legend.destroy(); chart.remove(); },
+    zoom: view.zoom,
+    pan: view.pan,
+    reset: view.reset,
+    destroy() { view.destroy(); resize.disconnect(); legend.destroy(); chart.remove(); },
   };
 }

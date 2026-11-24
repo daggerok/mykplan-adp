@@ -67,3 +67,12 @@ test('each fund over its own days, transfers and contributions are not return', 
   expect(r[1]!.ret).toBeCloseTo(-0.01, 12);
   expect(r[1]!.bench).toBeCloseTo(0, 12); // Wed: 99 -> 99
 });
+
+test('days after the index\'s last close are left out, not counted as a flat index day', () => {
+  const days = [day('2024-01-29', 1000, 1100, 0, 0.1), day('2024-02-02', 1100, 990, 0, -0.1)]; // Feb 2: index has no close yet
+  const r = periodVsBench(days, bench, '1W');
+  expect(r.map((x) => x.key)).toEqual(['2024-01-29']);
+  expect(r[0]!.mine).toBeCloseTo(0.1, 12); // the Feb 2 drop is not compared with a made-up 0%
+  expect(r[0]!.bench).toBeCloseTo(0.1, 12); // only Monday is an account day: the index +10% (Fri 100 -> Mon 110)
+  expect(allInBench(days, bench).map((p) => p.date)).toEqual(['2024-01-29']);
+});

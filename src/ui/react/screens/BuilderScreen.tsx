@@ -4,7 +4,15 @@ import { benchmarkLine } from '../../../app/benchmarks';
 import { buildSeries, loadLayouts, saveLayouts, type Layout } from '../../../app/builder';
 import type { Derived } from '../../../app/derive';
 import { mountPanes, type PanesHandle } from '../../../charts/panes';
-import { t } from '../../../app/i18n';
+import { lang, t } from '../../../app/i18n';
+import { settings } from '../../../app/data';
+import { ChartFrame } from '../ChartFrame';
+import { useStore } from '../useStore';
+
+// the line and fund buttons stay folded until asked for, so the chart gets the page (owner 2026-11-23)
+const OPEN_KEY = 'mykplan-adp-builder-open';
+type Open = { lines: boolean; funds: boolean };
+const loadOpen = (): Open => { try { return { lines: false, funds: false, ...(JSON.parse(localStorage.getItem(OPEN_KEY) ?? '{}') as Partial<Open>) }; } catch { return { lines: false, funds: false }; } };
 
 const btn = (on: boolean) => `rounded-md px-2 py-1 text-xs ${on ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700'}`;
 
@@ -13,6 +21,10 @@ export function BuilderScreen({ d, ds, benchmarks, dark }: { d: Derived; ds: Dat
   const chart = useRef<PanesHandle | null>(null);
   const [layouts, setLayouts] = useState<Layout[]>(loadLayouts);
   const [i, setI] = useState(0);
+  const [open, setOpenState] = useState<Open>(loadOpen);
+  const flip = (k: keyof Open) => setOpenState((v) => { const next = { ...v, [k]: !v[k] }; try { localStorage.setItem(OPEN_KEY, JSON.stringify(next)); } catch { /* private window */ } return next; });
+  const language = useStore(lang);
+  const colors = JSON.stringify(useStore(settings).chartColors ?? {});
   const [benchData, setBenchData] = useState<Record<string, Array<{ date: string; value: number }>>>({});
   const layout = layouts[i] ?? layouts[0]!;
   const funds = useMemo(() => Array.from(new Set(ds.dailyFunds.map((r) => r.fund))).sort(), [ds.dailyFunds]);
@@ -24,7 +36,7 @@ export function BuilderScreen({ d, ds, benchmarks, dark }: { d: Derived; ds: Dat
     chart.current = mountPanes(el.current);
     return () => { chart.current?.destroy(); chart.current = null; };
   }, []);
-  useEffect(() => { chart.current?.applyTheme(); }, [dark]);
+  useEffect(() => { chart.current?.applyTheme(); }, [dark, colors]);
 
   // benchmarks of the layout, rebased to the portfolio NAV at the start
   const wanted = layout.main.filter((x) => x.startsWith('bench:')).map((x) => x.slice(6));
@@ -42,7 +54,7 @@ export function BuilderScreen({ d, ds, benchmarks, dark }: { d: Derived; ds: Dat
     const benches: Record<string, Array<{ date: string; value: number }>> = {};
     wanted.forEach((t) => { benches[t] = benchData[`${t}@${start.date}`] ?? []; });
     chart.current?.set(buildSeries(layout, d, ds, benches));
-  }, [layout, d, ds, benchData]);
+  }, [layout, d, ds, benchData, language, colors]);
 
   return (
     // the screen fills the card and the chart takes what the buttons leave: with a fixed 68vh the time axis fell below
@@ -53,8 +65,11 @@ export function BuilderScreen({ d, ds, benchmarks, dark }: { d: Derived; ds: Dat
         <button type="button" className={btn(false)} onClick={() => { const name = t('Layout {n}', { n: layouts.length + 1 }); const next = [...layouts, { ...layout, name }]; setLayouts(next); saveLayouts(next); setI(next.length - 1); }}>{t('+ copy')}</button>
         {layouts.length > 1 && <button type="button" className={btn(false)} onClick={() => { const next = layouts.filter((_, k) => k !== i); setLayouts(next); saveLayouts(next); setI(0); }}>{t('delete')}</button>}
         <input className="w-40 rounded border border-slate-300 bg-white px-2 py-1 text-xs dark:border-slate-600 dark:bg-slate-900" value={layout.name} onChange={(e) => update({ name: e.target.value })} />
+        <span className="mx-1 text-slate-300">|</span>
+        <button type="button" className={btn(open.lines)} aria-expanded={open.lines} onClick={() => flip('lines')} title={t('Which lines and panes this layout shows')}>{t('Lines')} {open.lines ? '▴' : '▾'}</button>
+        <button type="button" className={btn(open.funds)} aria-expanded={open.funds} onClick={() => flip('funds')} title={t('Add the price line of any fund you held')}>{t('Funds')} {open.funds ? '▴' : '▾'}</button>
       </div>
-      <div className="flex flex-wrap items-center gap-2 text-xs">
+      {open.lines && <div className="flex flex-wrap items-center gap-2 text-xs">
         <button type="button" className={btn(layout.main.includes('nav'))} onClick={() => toggle('nav')}>Portfolio</button>
         <button type="button" className={btn(layout.main.includes('value'))} onClick={() => toggle('value')}>{t('Value $')}</button>
         {benchmarks.map((t) => <button key={t} type="button" className={btn(layout.main.includes(`bench:${t}`))} onClick={() => toggle(`bench:${t}`)}>{t}</button>)}
@@ -63,11 +78,11 @@ export function BuilderScreen({ d, ds, benchmarks, dark }: { d: Derived; ds: Dat
         <button type="button" className={btn(layout.contributions)} onClick={() => update({ contributions: !layout.contributions })}>{t('Contributions pane')}</button>
         <button type="button" className={btn(layout.drawdown)} onClick={() => update({ drawdown: !layout.drawdown })}>{t('Drawdown pane')}</button>
         <label className="flex items-center gap-1">{t('from')} <input type="date" className="rounded border border-slate-300 bg-white px-1 dark:border-slate-600 dark:bg-slate-900" value={layout.from ?? ''} onChange={(e) => update({ from: e.target.value || undefined })} /></label>
-      </div>
-      <div className="flex flex-wrap gap-1 text-xs">
+      </div>}
+      {open.funds && <div className="flex flex-wrap gap-1 text-xs">
         {funds.map((f) => <button key={f} type="button" className={btn(layout.main.includes(`fund:${f}`))} onClick={() => toggle(`fund:${f}`)} title={t('fund price')}>{f.split(' - ')[0]}</button>)}
-      </div>
-      <div ref={el} className="min-h-[320px] w-full flex-1" data-builder />
+      </div>}
+      <ChartFrame elRef={el} view={() => chart.current} className="min-h-[340px] flex-1" data="builder" />
     </div>
   );
 }

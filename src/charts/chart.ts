@@ -16,6 +16,7 @@ import {
 } from 'lightweight-charts';
 import { mountLegend, type LegendItem } from './legend';
 import { formatUnit, roomFor, type Unit } from './units';
+import { attachView, type ViewControls } from './view';
 export { roomFor } from './units';
 
 export interface LinePoint { date: string; value: number }
@@ -39,13 +40,16 @@ export interface ChartHandle {
   setLine(data: LinePoint[]): void;
   setCandles(data: CandlePoint[]): void;
   setBars(data: BarPoint[]): void; // a histogram as the main series: green up, red down
-  setVolume(data: LinePoint[]): void;
+  setVolume(data: LinePoint[], name?: string): void; // contributions per candle; the name goes into the legend
   setMarkers(markers: ChartMarker[]): void;
   setOverlays(overlays: Overlay[]): void;
   setUnit(unit: Unit, name?: string): void; // the scale's unit and the main series' legend line
   setLog(on: boolean): void;
   applyTheme(): void;
   fit(): void;
+  zoom: ViewControls['zoom'];
+  pan: ViewControls['pan'];
+  reset(): void; // the shown period over the full width and the lines over the full height
   destroy(): void;
 }
 
@@ -54,7 +58,9 @@ export interface ChartHandle {
 // or a pinch, move by dragging the chart; vertical touch drags scroll the page too
 export const PAGE_SCROLLS = {
   handleScroll: { mouseWheel: false, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
-  handleScale: { mouseWheel: false, pinch: true, axisPressedMouseMove: true, axisDoubleClickReset: true },
+  // a double click on the time axis is ours (view.ts: the period over the full width WITH the room on the right, like
+  // gex), on a price axis the library's autoscale
+  handleScale: { mouseWheel: false, pinch: true, axisPressedMouseMove: true, axisDoubleClickReset: { time: false, price: true } },
 } as const;
 
 export const RIGHT_ROOM = { rightOffset: 6 } as const;
@@ -65,12 +71,21 @@ export function mountChart(el: HTMLElement): ChartHandle {
   let legendItems: LegendItem[] = [];
   let bars = 0;
   let mainItem: LegendItem | null = null;
-  const paintLegend = () => legend.set([{ top: 0, items: mainItem ? [mainItem, ...legendItems] : legendItems }]);
+  let barsItem: LegendItem | null = null;
+  const paintLegend = () => legend.set([{ top: 0, items: [mainItem, ...legendItems, barsItem].filter((x): x is LegendItem => !!x) }]);
+  const fitAll = () => {
+    chart.timeScale().applyOptions({ rightOffset: roomFor(bars) });
+    chart.timeScale().fitContent();
+  };
+  const view = attachView(chart, el, fitAll);
   let main: ISeriesApi<'Line'> | ISeriesApi<'Candlestick'> | ISeriesApi<'Histogram'> | null = null;
   let markers: ISeriesMarkersPluginApi<Time> | null = null;
   let lastMarkers: ChartMarker[] = [];
-  const volume = chart.addSeries(HistogramSeries, { priceScaleId: 'volume', priceFormat: { type: 'volume' }, color: css('--band', 'rgba(37,99,235,.2)') });
-  chart.priceScale('volume').applyOptions({ scaleMargins: { top: 0.85, bottom: 0 } });
+  // contributions per candle along the bottom, in their own color (--bars) and a fifth of the height: at 8% opacity
+  // and a seventh of the height they were hard to see (owner 2026-11-23)
+  const barsColor = () => css('--bars', 'rgba(16,185,129,.45)');
+  const volume = chart.addSeries(HistogramSeries, { priceScaleId: 'volume', priceFormat: { type: 'volume' }, color: barsColor(), lastValueVisible: false, priceLineVisible: false });
+  chart.priceScale('volume').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
   let overlays: Array<ISeriesApi<'Line'>> = [];
 
   const replaceMain = (next: ISeriesApi<'Line'> | ISeriesApi<'Candlestick'> | ISeriesApi<'Histogram'>) => {
@@ -85,7 +100,8 @@ export function mountChart(el: HTMLElement): ChartHandle {
       time: m.date as Time,
       position: m.kind === 'contribution' ? 'belowBar' : 'aboveBar',
       shape: m.kind === 'contribution' ? 'arrowUp' : m.kind === 'rate' ? 'circle' : 'square',
-      color: m.kind === 'contribution' ? css('--up', '#16a34a') : m.kind === 'rate' ? css('--line', '#2563eb') : css('--down', '#dc2626'),
+      // rebalances in their own amber, not the down color: red squares read as losses (owner 2026-11-23)
+      color: m.kind === 'contribution' ? css('--up', '#16a34a') : m.kind === 'rate' ? css('--line', '#2563eb') : css('--rebalance', '#f59e0b'),
       text: m.kind === 'contribution' ? '' : m.text,
     }));
     markers.setMarkers(list);
@@ -110,7 +126,11 @@ export function mountChart(el: HTMLElement): ChartHandle {
       s.setData(data.map((p) => ({ time: p.date as Time, value: p.value, color: p.up ? css('--up', '#16a34a') : css('--down', '#dc2626') })));
       replaceMain(s);
     },
-    setVolume(data) { volume.setData(data.map((p) => ({ time: p.date as Time, value: p.value }))); },
+    setVolume(data, name) {
+      volume.setData(data.map((p) => ({ time: p.date as Time, value: p.value })));
+      barsItem = name && data.length ? { name, color: barsColor() } : null;
+      paintLegend();
+    },
     setMarkers(m) { lastMarkers = m; paintMarkers(); },
     setOverlays(list) {
       overlays.forEach((s) => chart.removeSeries(s));
@@ -130,14 +150,16 @@ export function mountChart(el: HTMLElement): ChartHandle {
     setLog(on) { chart.priceScale('right').applyOptions({ mode: on ? 1 : 0 }); },
     applyTheme() {
       chart.applyOptions(themeOptions());
-      volume.applyOptions({ color: css('--band', 'rgba(37,99,235,.2)') });
+      volume.applyOptions({ color: barsColor() });
+      if (barsItem) barsItem = { ...barsItem, color: barsColor() };
+      if (mainItem) mainItem = { ...mainItem, color: css('--line', '#2563eb') };
       paintMarkers();
       paintLegend();
     },
-    fit() {
-      chart.timeScale().applyOptions({ rightOffset: roomFor(bars) });
-      chart.timeScale().fitContent();
-    },
-    destroy() { legend.destroy(); chart.remove(); },
+    fit: fitAll,
+    zoom: view.zoom,
+    pan: view.pan,
+    reset: view.reset,
+    destroy() { view.destroy(); legend.destroy(); chart.remove(); },
   };
 }

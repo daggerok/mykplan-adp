@@ -73,6 +73,19 @@ export function SettingsPanel({ ds, d, source, userscript, s }: { ds: Dataset | 
         <label className="flex items-center gap-1"><input type="checkbox" checked={s.real} onChange={(e) => set({ real: e.target.checked })} /> {t("real (today's dollars)")}</label>
       </div>
 
+      <H>{t('Chart colors')}</H>
+      {/* each color overrides the theme's in both light and dark; the bars are drawn half see-through */}
+      <div className="flex flex-wrap items-center gap-3" data-chart-colors>
+        {([['up', t('Rising candles'), '#16a34a'], ['down', t('Falling candles'), '#dc2626'], ['line', t('Your line'), '#2563eb'], ['bars', t('Contribution bars'), '#10b981']] as const).map(([k, label, fallback]) => (
+          <label key={k} className="flex items-center gap-1.5">
+            <input type="color" className="h-7 w-9 cursor-pointer rounded border border-slate-300 bg-transparent p-0.5 dark:border-slate-600" value={s.chartColors?.[k] ?? fallback}
+              onChange={(e) => set({ chartColors: { ...(s.chartColors ?? {}), [k]: e.target.value } })} />
+            {label}
+          </label>
+        ))}
+        <button type="button" className={button} disabled={!Object.keys(s.chartColors ?? {}).length} onClick={() => set({ chartColors: {} })}>{t('Theme colors')}</button>
+      </div>
+
       <H>{t('Benchmarks shown on the chart')}</H>
       <div className="flex flex-wrap gap-2">
         {DEFAULT_BENCHMARKS.map((b) => (
